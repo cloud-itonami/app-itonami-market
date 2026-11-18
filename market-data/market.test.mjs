@@ -3,7 +3,7 @@ import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { capabilities, descriptor, history, quotes, snapshot } from './descriptor.mjs';
 import {
-  GATEWAY, MAX_BYTES, RAW_CID, PROVIDER, QUOTES_PATH, QUOTES_QUERY, HISTORY_QUERY, historyPath,
+  DEMO_PROVIDER, GATEWAY, MAX_BYTES, RAW_CID, PROVIDER, QUOTES_PATH, QUOTES_QUERY, HISTORY_QUERY, historyPath,
   encodeSnapshot, snapshotCID, snapshotFromQuotes, sourceURL, verifySnapshot, withHistory, readBoundedResponse,
 } from './market.mjs';
 
@@ -59,4 +59,12 @@ test('the canonical runtime validates approved routes and derives the exact exte
   assert(!clientEndpointAllowsRequest(history.endpoint, sourceURL(historyPath('other'), HISTORY_QUERY)));
   assert(!clientEndpointAllowsRequest(snapshot.endpoint, `${GATEWAY}/ipfs/anything?format=car`));
   assert(!clientEndpointAllowsRequest(snapshot.endpoint, `${GATEWAY}/other?format=raw`));
+});
+
+test('public sample CID is computed from a synthetic snapshot with history for every asset', async () => {
+  const sample = await readFile(new URL('sample-snapshot.json', import.meta.url));
+  const { sampleCID } = await import('./dist/sample-cid.mjs');
+  const decoded = await verifySnapshot(sample, sampleCID);
+  assert.equal(decoded.provider, DEMO_PROVIDER);
+  assert(decoded.assets.every(({ history }) => history?.points.length === 30));
 });

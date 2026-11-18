@@ -14,6 +14,7 @@ export const historyPath = (id) => `/api/v3/coins/${id}/market_chart`;
 export const sourceURL = (path, query) => `${PROVIDER}${path}?${new URLSearchParams(query)}`;
 
 const SCHEMA = 'itonami.market-snapshot.v1';
+export const DEMO_PROVIDER = 'Itonami synthetic fixture';
 const value = (number) => number === null || (Number.isFinite(number) && number >= 0);
 const iso = (time) => typeof time === 'string' && Number.isFinite(Date.parse(time))
   && new Date(time).toISOString() === time;
@@ -25,7 +26,7 @@ function sourceTime(value) {
 }
 
 export function validateSnapshot({ schema, currency, provider, quoteFetchedAt, assets }) {
-  if (schema !== SCHEMA || currency !== 'USD' || provider !== 'CoinGecko'
+  if (schema !== SCHEMA || currency !== 'USD' || (provider !== 'CoinGecko' && provider !== DEMO_PROVIDER)
       || !iso(quoteFetchedAt) || !Array.isArray(assets) || assets.length !== IDS.length) {
     throw new Error('市場スナップショットの形式に対応していません。');
   }

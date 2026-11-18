@@ -18,6 +18,10 @@ for (const [file, expected] of Object.entries(pins)) {
 }
 
 const { clientRuntimeConnectSrc } = await import(`data:text/javascript;base64,${Buffer.from(files['kotoba-client-runtime.js']).toString('base64')}`);
+const { decodeSnapshot, snapshotCID, DEMO_PROVIDER } = await import('./market.mjs');
+const sampleBytes = await readFile(new URL('sample-snapshot.json', import.meta.url));
+if (decodeSnapshot(sampleBytes).provider !== DEMO_PROVIDER) throw new Error('Public test snapshot must be synthetic');
+files['sample-cid.mjs'] = `export const sampleCID = ${JSON.stringify(await snapshotCID(sampleBytes))};\n`;
 const { descriptor, capabilities } = await import('./descriptor.mjs');
 const connectSrc = clientRuntimeConnectSrc(descriptor, capabilities);
 for (const file of ['market.mjs', 'app.mjs', 'descriptor.mjs', 'style.css']) {

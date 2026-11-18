@@ -63,3 +63,4 @@ input[type=file] { max-width: 100%; }
   th, td { padding-inline: .55rem; }
   canvas { height: 12rem; }
 }
+.test-snapshot { margin-block: 0 1rem; }
