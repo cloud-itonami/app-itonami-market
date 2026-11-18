@@ -1,7 +1,8 @@
 import { createClientConsentHost, createClientOperationBroker } from './kotoba-client-runtime.js';
+import { sampleCID } from './sample-cid.mjs';
 import { descriptor, capabilities, quotes, history, snapshot } from './descriptor.mjs';
 import {
-  ASSETS, GATEWAY, QUOTES_PATH, QUOTES_QUERY, HISTORY_QUERY, MAX_BYTES, RAW_CID,
+  ASSETS, DEMO_PROVIDER, GATEWAY, QUOTES_PATH, QUOTES_QUERY, HISTORY_QUERY, MAX_BYTES, RAW_CID,
   decodeSnapshot, encodeSnapshot, historyPath, readBoundedResponse, snapshotCID, snapshotFromQuotes,
   sourceURL, verifySnapshot, withHistory,
 } from './market.mjs';
@@ -43,8 +44,9 @@ function sourceLink(url, label = '出典データ') {
   return node;
 }
 function controls() {
-  for (const control of [ui.refresh, ui.load, ui.file]) control.disabled = busy;
-  for (const control of [ui.history, ui.save]) control.disabled = busy || !data;
+  for (const control of [ui.refresh, ui.load, ui.file, ui.example]) control.disabled = busy;
+  ui.save.disabled = busy || !data;
+  ui.history.disabled = busy || !data || data.provider === DEMO_PROVIDER;
 }
 
 function renderQuotes() {
@@ -66,10 +68,12 @@ function renderQuotes() {
     return row;
   });
   ui.quotes.replaceChildren(...rows);
-  ui['quote-context'].replaceChildren(
-    document.createTextNode(`時価総額順 · USD · 取得 ${timeLabel(data.quoteFetchedAt)} · `),
-    sourceLink(sourceURL(QUOTES_PATH, QUOTES_QUERY)),
-  );
+  const synthetic = data.provider === DEMO_PROVIDER;
+  ui['market-credit'].hidden = synthetic;
+  ui['quote-context'].textContent = synthetic
+    ? '動作確認用サンプル · 架空の数値 · USD'
+    : `時価総額順 · USD · 取得 ${timeLabel(data.quoteFetchedAt)}`;
+  if (!synthetic) ui['quote-context'].append(' · ', sourceLink(sourceURL(QUOTES_PATH, QUOTES_QUERY)));
 }
 
 function selectedHistory() {
@@ -130,12 +134,17 @@ function renderHistory() {
   ui['history-data'].hidden = !series;
   ui['history-empty'].hidden = Boolean(series);
   ui['history-context'].textContent = `${ASSETS[id].name} · 過去 30 日 · USD`;
-  ui['history-empty'].textContent = data ? 'この銘柄の価格履歴を取得できます。' : '市場データの取得後、銘柄の価格履歴を取得できます。';
+  ui['history-empty'].textContent = '市場データの取得後、銘柄の価格履歴を取得できます。';
+  if (data) {
+    ui['history-empty'].textContent = data.provider === DEMO_PROVIDER
+      ? 'このサンプルには価格履歴がありません。' : 'この銘柄の価格履歴を取得できます。';
+  }
   if (!series) return;
-  ui['history-context'].append(
-    document.createTextNode(` · 取得 ${timeLabel(series.fetchedAt)} · `),
-    sourceLink(sourceURL(historyPath(id), HISTORY_QUERY)),
-  );
+  if (data.provider === DEMO_PROVIDER) {
+    ui['history-context'].append(' · 動作確認用サンプル');
+  } else {
+    ui['history-context'].append(` · 取得 ${timeLabel(series.fetchedAt)} · `, sourceLink(sourceURL(historyPath(id), HISTORY_QUERY)));
+  }
   ui.points.replaceChildren(...series.points.toReversed().map(([time, price]) => {
     const row = element('tr');
     const header = element('th', timeLabel(time));
@@ -158,7 +167,6 @@ async function run(task) {
   if (busy) return;
   busy = true;
   controls();
-  ui.status.textContent = '処理中…';
   try {
     ui.status.textContent = await task();
   } catch (error) {
@@ -188,7 +196,9 @@ ui.refresh.addEventListener('click', () => run(async () => {
   const raw = await fetchJSON(quotes, sourceURL(QUOTES_PATH, QUOTES_QUERY));
   const next = snapshotFromQuotes(raw, now());
   // Retain history already retrieved in this view. Its source timestamp stays independent.
-  for (const asset of next.assets) asset.history = data?.assets.find(({ id }) => id === asset.id)?.history ?? null;
+  if (data?.provider === next.provider) {
+    for (const asset of next.assets) asset.history = data.assets.find(({ id }) => id === asset.id)?.history ?? null;
+  }
   show(next);
   return 'CoinGecko から市場データを取得しました。';
 }));
@@ -199,15 +209,21 @@ ui.history.addEventListener('click', () => run(async () => {
   show(withHistory(data, id, raw, now()));
   return `${ASSETS[id].name} の価格履歴を取得しました。`;
 }));
-ui['cid-form'].addEventListener('submit', (event) => {
-  event.preventDefault();
+function openCID(cid) {
   run(async () => {
-    const cid = ui.cid.value.trim();
     if (!RAW_CID.test(cid)) throw new Error('CIDv1 raw / sha2-256 の正規表記を入力してください。');
     const bytes = await fetchBytes(snapshot, `${GATEWAY}/ipfs/${cid}?format=raw`);
     show(await verifySnapshot(bytes, cid), { cid, bytes, label: 'Yataverse から取得・CID 検証済み' });
     return 'スナップショットを開きました。出典と日時はファイル内の記録です。';
   });
+}
+ui['cid-form'].addEventListener('submit', (event) => {
+  event.preventDefault();
+  openCID(ui.cid.value.trim());
+});
+ui.example.addEventListener('click', () => {
+  ui.cid.value = sampleCID;
+  openCID(sampleCID);
 });
 ui.file.addEventListener('change', () => {
   const file = ui.file.files[0];

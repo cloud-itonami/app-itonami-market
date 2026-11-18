@@ -22,7 +22,7 @@
     <p id="status" class="status" role="status">アプリを読み込んでいます。</p>
     <section class="card" aria-labelledby="market-title">
       <div class="card-head"><div><h2 id="market-title">市場一覧</h2><p id="quote-context">時価総額順 · USD</p></div>
-        <a href="https://www.coingecko.com/en/api" rel="noreferrer">Data provided by CoinGecko</a>
+        <a id="market-credit" href="https://www.coingecko.com/en/api" rel="noreferrer">Data provided by CoinGecko</a>
       </div>
       <div class="table-wrap" tabindex="0" role="region" aria-labelledby="market-title">
         <table>
@@ -56,6 +56,7 @@
         <form id="cid-form"><label for="cid">Yataverse CID</label>
           <div class="cid-row"><input id="cid" required maxlength="59" placeholder="bafkrei…" spellcheck="false" autocomplete="off"><button id="load" type="submit" disabled>CID で開く</button></div>
         </form>
+        <p class="test-snapshot"><button id="example" type="button" disabled>動作確認用サンプルを開く</button></p>
         <div class="file-row"><label for="file">JSON ファイルを開く</label><input id="file" type="file" accept=".json,application/json" disabled>
           <button type="button" id="save" disabled>JSON を保存</button>
         </div>
