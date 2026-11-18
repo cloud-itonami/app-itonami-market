@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'; @CONNECT_SRC@">
+  <title>営 市場情報</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./kotoba-client-consent.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <header class="masthead"><div class="shell masthead-inner">
+    <span class="wordmark"><b>営</b> 市場情報</span>
+    <a href="#snapshots">スナップショット</a>
+  </div></header>
+  <main class="shell">
+    <section class="intro" aria-labelledby="title">
+      <div><h1 id="title">暗号資産市場</h1><p>3 銘柄の市場指標と、過去 30 日の価格推移。</p></div>
+      <button type="button" class="primary" id="refresh" disabled>市場データを取得</button>
+    </section>
+    <p id="status" class="status" role="status">アプリを読み込んでいます。</p>
+    <section class="card" aria-labelledby="market-title">
+      <div class="card-head"><div><h2 id="market-title">市場一覧</h2><p id="quote-context">時価総額順 · USD</p></div>
+        <a href="https://www.coingecko.com/en/api" rel="noreferrer">Data provided by CoinGecko</a>
+      </div>
+      <div class="table-wrap" tabindex="0" role="region" aria-labelledby="market-title">
+        <table>
+          <thead><tr><th scope="col">銘柄</th><th scope="col">価格</th><th scope="col">時価総額</th><th scope="col">24h 出来高</th><th scope="col">流通供給量</th><th scope="col">観測時刻</th></tr></thead>
+          <tbody id="quotes"><tr><td colspan="6">市場データを取得するか、スナップショットを開いてください。</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card" aria-labelledby="chart-title">
+      <div class="card-head history-head"><div><h2 id="chart-title">価格履歴</h2><p id="history-context">過去 30 日 · USD</p></div>
+        <div class="history-controls">
+          <label for="asset">銘柄</label> <select id="asset"><option value="bitcoin">BTC</option><option value="ethereum">ETH</option><option value="solana">SOL</option></select>
+          <button id="history" type="button" disabled>履歴を取得</button>
+        </div>
+      </div>
+      <div class="chart-body">
+        <p id="history-empty">市場データの取得後、銘柄の価格履歴を取得できます。</p>
+        <div id="history-data" hidden>
+          <canvas id="graph" aria-hidden="true"></canvas>
+          <details><summary>価格履歴のデータ表</summary>
+            <div class="history-scroll" tabindex="0" role="region" aria-label="日次価格履歴">
+              <table><thead><tr><th scope="col">観測時刻</th><th scope="col">価格（USD）</th></tr></thead><tbody id="points"></tbody></table>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+    <section class="card" id="snapshots" aria-labelledby="snapshot-title">
+      <div class="card-head"><div><h2 id="snapshot-title">スナップショット</h2><p>Awai FS の raw ブロック形式。CID を指定すると Yataverse から取得できます。</p></div></div>
+      <div class="snapshot-body">
+        <form id="cid-form"><label for="cid">Yataverse CID</label>
+          <div class="cid-row"><input id="cid" required maxlength="59" placeholder="bafkrei…" spellcheck="false" autocomplete="off"><button id="load" type="submit" disabled>CID で開く</button></div>
+        </form>
+        <div class="file-row"><label for="file">JSON ファイルを開く</label><input id="file" type="file" accept=".json,application/json" disabled>
+          <button type="button" id="save" disabled>JSON を保存</button>
+        </div>
+        <p id="digest" hidden></p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
