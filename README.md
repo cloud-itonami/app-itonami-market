@@ -1,5 +1,7 @@
 # market — appview surface for the Etzhayyim capital-flow clearinghouse
 
+価格・流通供給量・時価総額・24 時間出来高・価格履歴は [営 市場情報 dApp](market-data/README.md) の独立した静的ビルドで閲覧できます。
+
 **この repo が持っているのは配信面（Cloudflare Worker + CLJS appview）だけで、
 ドメインロジックは 1 行も入っていない。** `market` という名前は機能を示さないので
 先に名乗る: `market.etzhayyim.com` として公開されるはずの **appview**（`kotodama.jsonld`
