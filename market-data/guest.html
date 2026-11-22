@@ -45,7 +45,7 @@
       <div class="card-head"><div><h2 id="snapshot-title">スナップショット</h2><p>Awai FS の raw ブロック形式。CID を指定すると Yataverse から取得できます。</p></div></div>
       <div class="snapshot-body">
         <form id="cid-form"><label for="cid">Yataverse CID</label>
-          <div class="cid-row"><input id="cid" required maxlength="59" placeholder="bafkrei…" spellcheck="false" autocomplete="off"><button id="load" type="submit" disabled>CID で開く</button></div>
+          <div class="cid-row"><input id="cid" required maxlength="59" placeholder="bafkrei…" spellcheck="false" autocomplete="off"><button id="load" type="button" data-submit disabled>CID で開く</button></div>
         </form>
         <p class="test-snapshot"><button id="example" type="button" disabled>動作確認用サンプルを開く</button></p>
         <div class="file-row"><label for="file">JSON ファイルを開く</label><input id="file" type="file" accept=".json,application/json" disabled>

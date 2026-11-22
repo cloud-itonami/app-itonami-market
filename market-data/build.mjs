@@ -9,6 +9,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { bundleModules, readModules } from './guest-bundle.mjs';
+import { checkNoSubmit } from './check-no-submit.mjs';
 
 export const RUNTIME_REVISION = 'e58ae70b4bdc818b3feec767f7ac9908cd6e7a2c';
 export const RUNTIME_SOURCE = `https://raw.githubusercontent.com/kotoba-lang/kotoba/${RUNTIME_REVISION}/lib/kotoba.wasmWebcomponent/src/`;
@@ -71,11 +72,14 @@ export async function build({ env = process.env, out = new URL('./dist/', import
     [name, op ? { capability: op.capability, service: op.service, operation: op.operation } : null]));
   modules['operations.mjs'] = `export default ${JSON.stringify(selectors)};\n`;
   const script = bundleModules(modules, 'guest.mjs');
+  // The sandbox has no allow-forms (B5): the guest must not rely on a submit event (itonami-lib guard).
+  checkNoSubmit(script, 'the restricted guest script');
   const style = await read('style.css');
   if (/<\/style/i.test(style)) throw new Error('style.css contains </style');
   const template = await read('guest.html');
   for (const marker of ['{{STYLE}}', '{{SCRIPT}}']) if (template.split(marker).length !== 2) throw new Error(`guest.html must contain ${marker} once`);
   const guest = template.replace('{{STYLE}}', () => style).replace('{{SCRIPT}}', () => script);
+  checkNoSubmit(guest, 'the restricted guest');
   if (guest.length > 8388608) throw new Error('the guest exceeds the 8 MiB mount budget');
   const guestBytes = new TextEncoder().encode(guest);
   const artifact = { revision: state.commit, sha256: sha256(guestBytes), 'max-bytes': guestBytes.byteLength };
