@@ -12,7 +12,7 @@ BTC、ETH、SOL を時価総額順で表示する静的な営 dApp。価格・�
 - **「JSON を保存」**: 使えない。app は sandbox の中で動き、そこから利用者にファイルを渡す口が、共通の runtime にまだないため（KOTOBA-968）。
 - ローカルの JSON ファイルを開くことと、CoinGecko からの市場データと価格履歴の取得は使える。
 
-止めている機能は `disabled-features.json` に機械で読める形でも書いてある。**これが空でないあいだ、CI は Pages にデプロイしない**（`check-feature-parity.mjs`、Decision 2026-11-22）。機能が戻ったら、その行を消し、ここも書き直す。
+止めている機能は `disabled-features.json` に機械で読める形でも書いてある。**これが空でないあいだ、CI は Pages にデプロイしない**（`deploy-gate.mjs`、Decision 2026-11-22）。機能が戻ったら、その行を消し、ここも書き直す。
 
 ## 起動と確認
 

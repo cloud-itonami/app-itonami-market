@@ -1,6 +1,6 @@
 {
   "schema": "itonami.disabled-features.v1",
-  "note": "Features that worked before the restricted-wasm-v1 move and are off now. Decision 2026-11-22: Market is not deployed while this list is not empty (check-feature-parity.mjs). Remove an entry only when the feature works again.",
+  "note": "Features that worked before the restricted-wasm-v1 move and are off now. Decision 2026-11-22: Market is not deployed while this list is not empty (deploy-gate.mjs). Remove an entry only when the feature works again.",
   "features": [
     {
       "id": "json-save",
