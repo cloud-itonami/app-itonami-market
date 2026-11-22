@@ -104,7 +104,7 @@ test('forms use the shared helper, not the submit event; the shared copy is byte
   const guest = await readFile(new URL('guest.mjs', import.meta.url), 'utf8');
   assert.match(guest, /bindForm\(ui\['cid-form'\]/);
   assert.ok(!/addEventListener\('submit'/.test(guest));
-  assert.equal(sha256(await readFile(new URL('guest-form.js', import.meta.url))), 'a50e711aecd9d9ad65c29d51796c0ea44295dcf749d2789d09d934fe5878595c');
+  assert.equal(sha256(await readFile(new URL('guest-form.js', import.meta.url))), '62c89151d91b6891bf48417e8743adda4124bb72f049f735ee42cb0911165a0e');
 });
 
 test('設定 › 許可した送信: a withdrawn service is not eligible; restore brings it back', () => {

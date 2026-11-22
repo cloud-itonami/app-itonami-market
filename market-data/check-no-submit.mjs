@@ -1,4 +1,4 @@
-// Copied from cloud-itonami/itonami-lib scripts/build.mjs (PR #2, 7ac52696), unchanged, until the
+// Copied from cloud-itonami/itonami-lib scripts/build.mjs (PR #2, 7ac52696; unchanged in v0.1.2), unchanged, until the
 // app builds import it from the lib.
 /**
  * The restricted sandbox has no allow-forms: a submit event never fires.
