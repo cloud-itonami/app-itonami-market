@@ -1,0 +1,18 @@
+{
+  "schema": "itonami.disabled-features.v1",
+  "note": "Features that worked before the restricted-wasm-v1 move and are off now. Decision 2026-11-22: Market is not deployed while this list is not empty (check-feature-parity.mjs). Remove an entry only when the feature works again.",
+  "features": [
+    {
+      "id": "json-save",
+      "label": "JSON を保存",
+      "reason": "The sandboxed guest has no way to hand a file to the user until the runtime's save hand-off.",
+      "waits-for": "KOTOBA-968"
+    },
+    {
+      "id": "cid-open",
+      "label": "CID でスナップショットを開く、動作確認用サンプルを開く",
+      "reason": "The yataverse.com operator is not confirmed, so the Yataverse read is not declared.",
+      "waits-for": "Itonami item 68 (yataverse operator)"
+    }
+  ]
+}
