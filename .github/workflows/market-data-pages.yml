@@ -26,12 +26,9 @@ jobs:
           node-version: '22'
       - run: node market-data/build.mjs
       - run: node --test market-data/*.test.mjs
-      - name: No feature that worked before the move is still off (disabled-features.json)
+      - name: Deploy gate (disclosure pages answer 200, no feature from before the move is off)
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        run: node market-data/check-feature-parity.mjs
-      - name: Disclosure pages answer 200 before deployment
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        run: node market-data/check-disclosure-pages.mjs
+        run: node market-data/deploy-gate.mjs
       - if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
