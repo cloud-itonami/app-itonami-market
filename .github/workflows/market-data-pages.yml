@@ -26,6 +26,9 @@ jobs:
           node-version: '22'
       - run: node market-data/build.mjs
       - run: node --test market-data/*.test.mjs
+      - name: No feature that worked before the move is still off (disabled-features.json)
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: node market-data/check-feature-parity.mjs
       - name: Disclosure pages answer 200 before deployment
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: node market-data/check-disclosure-pages.mjs
