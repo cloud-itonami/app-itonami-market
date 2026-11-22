@@ -1,22 +1,19 @@
-import { createClientConsentHost, createClientOperationBroker } from './kotoba-client-runtime.js';
+// restricted-wasm-v1 guest (KOTOBA-159). The host page mounts this document with
+// mountRestrictedClientApp in an opaque-origin sandbox (iframe sandbox="allow-scripts",
+// connect-src 'none'): no network, no storage, no downloads and no parent DOM. Each fetch is one
+// kotoba.client.operation.v1 message on the host port (guest-port.js); the canonical broker on the
+// host page checks it against the descriptor, asks the user and sends it. build.mjs inlines the
+// modules into one script (guest-bundle.mjs); an operation that is not declared arrives as null.
 import { sampleCID } from './sample-cid.mjs';
-import { descriptor, capabilities, quotes, history, snapshot } from './descriptor.mjs';
-import {
-  ASSETS, DEMO_PROVIDER, GATEWAY, QUOTES_PATH, QUOTES_QUERY, HISTORY_QUERY, MAX_BYTES, RAW_CID,
-  decodeSnapshot, encodeSnapshot, historyPath, readBoundedResponse, snapshotCID, snapshotFromQuotes,
-  sourceURL, verifySnapshot, withHistory,
-} from './market.mjs';
+import operations from './operations.mjs';
+import { createGuestPort } from './guest-port.js';
+import { bindForm } from './guest-form.js';
+import { linkAllowed } from './links.mjs';
+import { ASSETS, DEMO_PROVIDER, GATEWAY, QUOTES_PATH, QUOTES_QUERY, HISTORY_QUERY, MAX_BYTES, RAW_CID, decodeSnapshot, encodeSnapshot, historyPath, readBoundedResponse, snapshotCID, snapshotFromQuotes, sourceURL, verifySnapshot, withHistory } from './market.mjs';
 
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map((element) => [element.id, element]));
-const hostSupportedOperations = descriptor.operations.map(({ capability, service, operation }) => [capability, service, operation]);
-const broker = createClientOperationBroker({
-  runtime: descriptor,
-  requestedCapabilities: capabilities,
-  hostSupportedOperations,
-  // Eligibility ceiling in the shared API. Each invocation still requires a trusted, fresh choice.
-  approvedOperations: descriptor.operations,
-  consentHost: createClientConsentHost(),
-});
+const { quotes, history, snapshot } = operations;
+const port = createGuestPort();
 
 const money = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'USD', maximumFractionDigits: 8 });
 const usdWhole = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
@@ -44,9 +41,13 @@ function sourceLink(url, label = '出典データ') {
   return node;
 }
 function controls() {
-  for (const control of [ui.refresh, ui.load, ui.file, ui.example]) control.disabled = busy;
-  ui.save.disabled = busy || !data;
-  ui.history.disabled = busy || !data || data.provider === DEMO_PROVIDER;
+  ui.refresh.disabled = busy || !quotes;
+  ui.file.disabled = busy;
+  // The Yataverse recipient is not confirmed, so the snapshot read is not declared (null).
+  for (const control of [ui.load, ui.example, ui.cid]) control.disabled = busy || !snapshot;
+  // The sandbox cannot hand a file to the user until the runtime's save hand-off (KOTOBA-968, B3).
+  ui.save.disabled = true;
+  ui.history.disabled = busy || !history || !data || data.provider === DEMO_PROVIDER;
 }
 
 function renderQuotes() {
@@ -170,9 +171,9 @@ async function run(task) {
   try {
     ui.status.textContent = await task();
   } catch (error) {
-    const message = error.message === 'client operation was not approved'
-      ? '取得を取り消しました。'
-      : `処理できませんでした。 ${error.message}`;
+    const message = error.message === 'client operation was not approved' ? '取得を取り消しました。'
+      : error.message === 'client operation is not eligible and supported' ? 'この送信は 設定 › 許可した送信 で取り消されています。'
+        : `処理できませんでした。 ${error.message}`;
     ui.status.textContent = data ? `${message} 表示中のデータは前回取得分です。` : message;
   } finally {
     busy = false;
@@ -183,7 +184,7 @@ async function fetchBytes(operation, input) {
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), 120_000);
   try {
-    const response = await broker.invoke(operation, { input }, { signal: abort.signal });
+    const response = await port.invoke(operation, { input }, { signal: abort.signal });
     return await readBoundedResponse(response);
   } finally {
     clearTimeout(timer);
@@ -217,10 +218,8 @@ function openCID(cid) {
     return 'スナップショットを開きました。出典と日時はファイル内の記録です。';
   });
 }
-ui['cid-form'].addEventListener('submit', (event) => {
-  event.preventDefault();
-  openCID(ui.cid.value.trim());
-});
+// The sandbox has no allow-forms (B5): the button and Enter call one handler (guest-form.js).
+bindForm(ui['cid-form'], () => { if (snapshot) openCID(ui.cid.value.trim()); });
 ui.example.addEventListener('click', () => {
   ui.cid.value = sampleCID;
   openCID(sampleCID);
@@ -238,19 +237,28 @@ ui.file.addEventListener('change', () => {
     return 'ファイルを開きました。出典と日時はファイル内の記録です。';
   });
 });
-ui.save.addEventListener('click', () => run(async () => {
-  const bytes = openedBlock?.bytes ?? encodeSnapshot(data);
-  const cid = openedBlock?.cid ?? await snapshotCID(bytes);
-  const href = URL.createObjectURL(new Blob([bytes], { type: 'application/json' }));
-  const link = element('a');
-  link.href = href;
-  link.download = `market-${cid}.json`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(href), 10_000);
-  ui.digest.textContent = `保存対象の CID · ${cid}`;
-  ui.digest.hidden = false;
-  return 'スナップショットのダウンロードを開始しました。';
-}));
+// B3: there is no way to hand a file to the user from the sandbox yet (KOTOBA-968). The button
+// stays disabled and says why; encodeSnapshot and the CID are kept for the save hand-off.
+ui.save.title = '保存は、runtime の書き出しの口ができるまで使えません。';
+void encodeSnapshot;
+
+// The sandbox cannot open another page (a link would replace this document, and the host then
+// closes the app). Declared fixed links show their address instead (links.mjs).
+document.addEventListener('click', (event) => {
+  const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+  if (!link || link.getAttribute('href').startsWith('#')) return;
+  event.preventDefault();
+  if (!linkAllowed(link.href)) { ui.status.textContent = 'このリンクの行き先は宣言されていません。'; return; }
+  const address = document.createElement('code');
+  address.textContent = link.href;
+  ui['link-note'].replaceChildren('この画面からは外部のページを開けません。アドレス: ', address);
+  ui['link-note'].hidden = false;
+});
+
 new ResizeObserver(drawChart).observe(ui.graph);
 controls();
-ui.status.textContent = '市場データの取得またはスナップショットの読み込みを選んでください。';
+ui.status.textContent = 'アプリを準備しています。';
+port.ready.then(() => {
+  ui.status.textContent = snapshot ? '市場データの取得またはスナップショットの読み込みを選んでください。'
+    : '市場データを CoinGecko から取得できます。Yataverse の送り先が確定していないため、CID でのスナップショットの取得は無効です。JSON ファイルは開けます。';
+});
