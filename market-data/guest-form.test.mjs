@@ -1,4 +1,4 @@
-// The shared form helper (KOTOBA-159 B5): itonami-lib src/form.js (PR #2, 7ac52696), byte for byte,
+// The shared form helper (KOTOBA-159 B5): itonami-lib src/form.js (v0.1.2, eb5fbdff), byte for byte,
 // and the build guard checkNoSubmit. A minimal stand-in DOM is enough for bindForm.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -7,7 +7,7 @@ import { readFile } from "node:fs/promises";
 import { bindForm, formValues, isSingleLineInput } from "./guest-form.js";
 import { checkNoSubmit } from "./check-no-submit.mjs";
 
-const LIB_FORM_SHA256 = "a50e711aecd9d9ad65c29d51796c0ea44295dcf749d2789d09d934fe5878595c";
+const LIB_FORM_SHA256 = "62c89151d91b6891bf48417e8743adda4124bb72f049f735ee42cb0911165a0e";
 const S = "sub" + "mit"; // built from parts so this file is not itself a hit
 
 function el(tagName, props = {}) {
@@ -74,9 +74,8 @@ test("formValues: strings, a lone checkbox as boolean, repeated names as arrays,
     el("button", { attrs: { type: "button" }, name: "b", value: "v" }),
     el("input", { attrs: { type: "text" }, name: "off", value: "z", disabled: true }),
   ]);
-  // itonami-lib 7ac52696 as it is: with one of two same-name checkboxes checked, put() keeps a single
-  // string ("x"), not ["x"] as App Build's description says. Reported; the copy stays byte-identical.
-  assert.deepEqual(formValues(form), { a: "1", one: true, many: "x", r: null });
+  // itonami-lib v0.1.2: a name used by two or more controls is always an array, even with one checked.
+  assert.deepEqual(formValues(form), { a: "1", one: true, many: ["x"], r: null });
   assert.ok(isSingleLineInput(el("input", { attrs: { type: "search" } })));
   assert.ok(!isSingleLineInput(el("textarea")));
 });
