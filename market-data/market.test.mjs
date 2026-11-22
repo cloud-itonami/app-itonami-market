@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
-import { capabilities, descriptor, history, quotes, snapshot } from './descriptor.mjs';
+import { capabilities, candidates, descriptor } from './descriptor.mjs';
+
+const { quotes, history, snapshot } = candidates;
 import {
   DEMO_PROVIDER, GATEWAY, MAX_BYTES, RAW_CID, PROVIDER, QUOTES_PATH, QUOTES_QUERY, HISTORY_QUERY, historyPath,
   encodeSnapshot, snapshotCID, snapshotFromQuotes, sourceURL, verifySnapshot, withHistory, readBoundedResponse,
@@ -51,7 +53,8 @@ test('enforces response byte and status bounds', async () => {
 test('the canonical runtime validates approved routes and derives the exact external CSP', async () => {
   const bytes = await readFile(new URL('dist/kotoba-client-runtime.js', import.meta.url));
   const { clientEndpointAllowsRequest, clientRuntimeConnectSrc } = await import(`data:text/javascript;base64,${bytes.toString('base64')}`);
-  assert.equal(clientRuntimeConnectSrc(descriptor, capabilities), `connect-src ${PROVIDER} ${GATEWAY}`);
+  // Yataverse is not declared until its recipient is confirmed (disclosures.mjs).
+  assert.equal(clientRuntimeConnectSrc(descriptor, capabilities), `connect-src ${PROVIDER}`);
   assert(clientEndpointAllowsRequest(quotes.endpoint, sourceURL(QUOTES_PATH, QUOTES_QUERY)));
   assert(!clientEndpointAllowsRequest(quotes.endpoint, sourceURL(QUOTES_PATH, { ...QUOTES_QUERY, vs_currency: 'eur' })));
   assert(!clientEndpointAllowsRequest(quotes.endpoint, sourceURL(QUOTES_PATH, QUOTES_QUERY), 'POST'));
@@ -63,7 +66,9 @@ test('the canonical runtime validates approved routes and derives the exact exte
 
 test('public sample CID is computed from a synthetic snapshot with history for every asset', async () => {
   const sample = await readFile(new URL('sample-snapshot.json', import.meta.url));
-  const { sampleCID } = await import('./dist/sample-cid.mjs');
+  const sampleCID = await snapshotCID(sample);
+  const { default: host } = await import('./dist/host-data.js');
+  assert(host.guest.includes(JSON.stringify(sampleCID)), 'the guest carries the sample CID');
   const decoded = await verifySnapshot(sample, sampleCID);
   assert.equal(decoded.provider, DEMO_PROVIDER);
   assert(decoded.assets.every(({ history }) => history?.points.length === 30));

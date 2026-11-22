@@ -4,7 +4,15 @@ BTC、ETH、SOL を時価総額順で表示する静的な営 dApp。価格・�
 
 ## 公開版
 
-[営 市場情報](https://network-awai.github.io/app-itonami-market/) の「動作確認用サンプルを開く」で Yataverse から公開ブロックを取得できる。サンプルはこのリポジトリの `sample-snapshot.json` に由来する架空の数値で、CoinGecko の市場データは含まない。「市場データを取得」で実際の観測データに切り替えられる。
+[営 市場情報](https://cloud-itonami.github.io/app-itonami-market/)。
+
+**今は使えない機能（2026-11-22、restricted-wasm-v1 への移行による）**
+
+- **CID でスナップショットを開く操作と、「動作確認用サンプルを開く」**: 使えない。Yataverse（yataverse.com）を運営する事業者が確定しておらず、外部への送信として宣言していないため（KOTOBA-159）。
+- **「JSON を保存」**: 使えない。app は sandbox の中で動き、そこから利用者にファイルを渡す口が、共通の runtime にまだないため（KOTOBA-968）。
+- ローカルの JSON ファイルを開くことと、CoinGecko からの市場データと価格履歴の取得は使える。
+
+送り先が確定するか、書き出しの口ができたら、ここを書き直す。
 
 ## 起動と確認
 
@@ -12,7 +20,8 @@ BTC、ETH、SOL を時価総額順で表示する静的な営 dApp。価格・�
 
 ```sh
 node market-data/build.mjs
-node --test market-data/market.test.mjs
+node --test market-data/*.test.mjs
+node market-data/verify-browser.mjs   # 本物の Chrome で確かめる（ネットワークを使う）
 python3 -m http.server 4173 --bind 127.0.0.1 --directory market-data/dist
 ```
 
